@@ -1,0 +1,5 @@
+torch
+torchvision
+ftfy
+regex
+git+https://github.com/openai/CLIP.git
