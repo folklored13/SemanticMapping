@@ -33,26 +33,33 @@ class SemanticMapManager:
         if self.index_features is None:
             raise ValueError("Map index is empty. Please call build_map() first.")
 
+        # 去掉一些动词干扰噪声
+        clean_query = user_query.lower().replace("find", "").replace("search", "").replace("show me", "").strip()
+
         # 1. 编码用户查询 (Query通常不需要加 'a photo of'，除非用户只输入一个单词)
         # 这里假设用户输入的是自然语言句子
-        query_feature = self.engine.encode_text_list([user_query], use_prompt=False)
+        query_feature = self.engine.encode_text_list([clean_query], use_prompt=False)
 
         # 2. 计算相似度
         raw_similarity = self.engine.compute_similarity(query_feature, self.index_features)
 
-        # 3. 使用 Softmax 归一化分数 (可选，为了更好看) 或者直接用原始分数
-        probs = raw_similarity.softmax(dim=-1).cpu().squeeze(0)
+        # # 3. 使用 Softmax 归一化分数 (可选，为了更好看) 或者直接用原始分数
+        # probs = raw_similarity.softmax(dim=-1).cpu().squeeze(0)
+
+        # 修改：去掉softmax，使用原始相似度
+        score = raw_similarity.cpu().squeeze(0)
 
         # 4. 获取前 K 个结果
-        top_probs, top_indices = probs.topk(min(top_k, len(self.labels)))
+        top_probs, top_indices = score.topk(min(top_k, len(self.labels)))
 
         results = []
         for score, idx in zip(top_probs, top_indices):
             idx = idx.item()
             score = score.item()
 
-            # 简单过滤
-            if score < config.THRESHOLD_SCORE:
+            # 因为现在是原始余弦相似度，阈值设为 0.2 ~ 0.25 之间
+            # 如果低于阈值，就说明 CLIP 认为根本不像
+            if score < 0.22:
                 continue
 
             results.append({

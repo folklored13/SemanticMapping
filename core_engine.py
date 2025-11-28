@@ -41,5 +41,6 @@ class CLIPEngine:
         :return: (1, N) values, indices
         """
         # 矩阵乘法计算相似度 (因为已经归一化了，点积=余弦相似度)
-        similarity = (100.0 * query_features @ map_features.T)
+        # similarity = (100.0 * query_features @ map_features.T)
+        similarity = query_features @ map_features.T
         return similarity

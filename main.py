@@ -10,7 +10,7 @@ def main():
     # 2. 初始化地图管理器
     map_manager = SemanticMapManager(clip_engine)
 
-    # 3. 模拟语义地图数据 (实际应用中可能来自数据库或文件)
+    # 3. 模拟语义地图数据
     # 假设机器人知道这些地点的存在
     my_semantic_map = [
         "kitchen sink",  # 厨房水槽
@@ -21,7 +21,8 @@ def main():
         "potted plant",  # 盆栽
         "toilet",  # 厕所
         "meeting room whiteboard",  # 会议室白板
-        "laptop on table"
+        "laptop on table",
+        "red apple on table"
     ]
 
     # 4. 构建索引
