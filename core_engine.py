@@ -1,6 +1,6 @@
 import torch
 import clip
-import config  # 导入配置文件
+import config
 
 
 class CLIPEngine:
@@ -8,25 +8,16 @@ class CLIPEngine:
         print(f"[Info] Loading CLIP model: {config.MODEL_NAME} on {config.DEVICE}...")
         self.device = config.DEVICE
         self.model, self.preprocess = clip.load(config.MODEL_NAME, device=self.device)
-        self.model.eval()  # 设置为评估模式
+        self.model.eval()
 
-    def encode_text_list(self, text_list, use_prompt=True):
+    def encode_text_list(self, text_list):
         """
-        将文本列表转化为归一化的特征向量
-        :param text_list: 字符串列表 ["apple", "banana"]
-        :param use_prompt: 是否自动添加 'a photo of' 前缀
-        :return: Tensor (N, D)
+        将文本描述转化为特征向量
+        注意：这里不再自动加 "a photo of"，因为我们会在 map_manager 里构建更复杂的描述
         """
-        if use_prompt:
-            # 提示词工程：对于物体标签，加上语境通常效果更好
-            processed_texts = [f"a photo of a {t}" for t in text_list]
-        else:
-            processed_texts = text_list
+        # Tokenize (截断长度，防止描述过长报错)
+        text_tokens = clip.tokenize(text_list, truncate=True).to(self.device)
 
-        # Tokenize
-        text_tokens = clip.tokenize(processed_texts, truncate=True).to(self.device)
-
-        # Encode & Normalize
         with torch.no_grad():
             features = self.model.encode_text(text_tokens)
             features /= features.norm(dim=-1, keepdim=True)
@@ -35,12 +26,6 @@ class CLIPEngine:
 
     def compute_similarity(self, query_features, map_features):
         """
-        计算余弦相似度
-        :param query_features: (1, D)
-        :param map_features: (N, D)
-        :return: (1, N) values, indices
+        计算余弦相似度 (0~1)
         """
-        # 矩阵乘法计算相似度 (因为已经归一化了，点积=余弦相似度)
-        # similarity = (100.0 * query_features @ map_features.T)
-        similarity = query_features @ map_features.T
-        return similarity
+        return query_features @ map_features.T
